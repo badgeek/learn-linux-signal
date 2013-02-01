@@ -10,10 +10,18 @@ int main()
 {
 
 	int fd;
+	int wd;
+	int rd;
+
+	char buf[8];
 
 	//open serial device /dev/usbserial...
+	//+read write
+	//+non blocking
+	//+no tty interrupt
+	fd = open("/dev/cu.usbserial-A600eD9p", O_RDWR | O_NOCTTY );
 
-	fd = open("/dev/cu.usbserial-A800eIEM", O_RDWR | O_NOCTTY | O_NDELAY);
+	printf("open: %i\n", fd);
 
 	struct termios serial_opt;
 
@@ -46,10 +54,25 @@ int main()
 	//disable output processing
 	serial_opt.c_oflag &= ~OPOST;
 
+	//set input output serial speed
+	cfsetispeed(&serial_opt, B115200);
+	cfsetospeed(&serial_opt, B115200);
 
 	//printf("serial opt: %i\n", (int) serial_opt.c_cflag);
 
-	printf("asssik!\n");
+
+	//see http://unixwiz.net/techtips/termios-vmin-vtime.html
+	serial_opt.c_cc[VMIN]	=	0;
+	serial_opt.c_cc[VTIME]	=	20; //20 = 2 sec
+
+	tcsetattr(fd, TCSANOW, &serial_opt);
+
+	rd = read(fd, buf, 1);
+	printf("read content: %s\n", buf);
+	printf("read %i\n", rd);
+
+	wd = write(fd, "asikbos\n", 8);
+	printf("write %i\n", wd);
 
 	close(fd);
 	return 0;
